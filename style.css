@@ -78,6 +78,23 @@ nav {
   color: #777;
 }
 
+.login-error-hidden {
+  display: none;
+}
+
+.login-error {
+  color: white;
+  opacity: 1;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 5rem;
+  width: 50%;
+  text-align: center;
+  padding: 20px;
+  background-image: linear-gradient(to top left, #e52a5a, #ff585f);
+  border-radius: 15px;
+}
+
 /* MAIN */
 .app {
   position: relative;
@@ -89,7 +106,7 @@ nav {
   gap: 2rem;
 
   /* NOTE This creates the fade in/out anumation */
-  /* opacity: 0; */
+  opacity: 0;
   transition: all 1s;
 }
 

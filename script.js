@@ -44,6 +44,7 @@ const containerApp = document.querySelector('.app');
 const containerMovements = document.querySelector('.movements');
 
 const btnLogin = document.querySelector('.login__btn');
+const loginError = document.querySelector('.login-error-hidden');
 const btnTransfer = document.querySelector('.form__btn--transfer');
 const btnLoan = document.querySelector('.form__btn--loan');
 const btnClose = document.querySelector('.form__btn--close');
@@ -72,7 +73,6 @@ const displayMovements = function (movements) {
     containerMovements.insertAdjacentHTML('afterbegin', html);
   });
 };
-displayMovements(account1.movements);
 
 
 const calcAndDisplayBalance = function (movements) {
@@ -81,37 +81,34 @@ const calcAndDisplayBalance = function (movements) {
   }, 0)
   labelBalance.textContent = `${balance} USD`
 };
-calcAndDisplayBalance(account1.movements);
 
 
-const calcDisplaySummary = function (movements) {
-  const incomes = movements.filter(function (movement) {
+const calcDisplaySummary = function (account) {
+  const incomes = account.movements.filter(function (movement) {
     return movement > 0
   }).reduce(function (accumulator, movement) {
     return accumulator + movement
   }, 0)
   labelSumIn.textContent = `${incomes}$`
 
-  const outcomes = movements.filter(function (movement) {
+  const outcomes = account.movements.filter(function (movement) {
     return movement < 0
   }).reduce(function (accumulator, movement) {
     return accumulator + movement
   }, 0)
   labelSumOut.innerHTML = `${outcomes}$`
 
-  const interest = movements.filter(function (movement) {
+  const interest = account.movements.filter(function (movement) {
     return movement > 0
   }).map(function (deposit) {
-    return deposit * 1.2 / 100
+    return deposit * account.interestRate / 100
   }).filter(function (interest, index, array) {
-    console.log(array)
     return interest >= 1
   }).reduce(function (accumulator, interest) {
     return accumulator + interest
   }, 0)
   labelSumInterest.innerHTML = `${interest}$`
 }
-calcDisplaySummary(account1.movements)
 
 
 // Target and take the first letter of each users' first name and last name.
@@ -126,6 +123,45 @@ const createUsernames = function (accounts) {
 };
 createUsernames(accounts);
 
+// currentAccount is equal to the logged-in user
+let currentAccount;
+
+btnLogin.addEventListener('click', function (event) {
+  // Prevent form from submitting when users log in
+  event.preventDefault();
+  currentAccount = accounts.find(function (account) {
+    return account.username === inputLoginUsername.value
+  })
+  console.log(currentAccount)
+
+  if (currentAccount?.pin === Number(inputLoginPin.value)) {
+    //Display welcome message and the whole UI elements
+    labelWelcome.textContent = `Welcome back ${currentAccount.owner.split(' ')[0]}`;
+    containerApp.style.opacity = 100;
+    inputLoginUsername.value = '';
+    inputLoginPin.value = '';
+    inputLoginPin.blur();
+    displayMovements(currentAccount.movements);
+    calcAndDisplayBalance(currentAccount.movements);
+    calcDisplaySummary(currentAccount)
+    if (loginError.classList.contains('login-error')) {
+      loginError.classList.remove('login-error');
+      loginError.classList.add('login-error-hidden');
+    }
+  } else {
+    loginError.innerHTML = '<h1>An error occurred during authentication. Please ensure you have the right username and PIN.</h1>';
+    loginError.classList.remove('login-error-hidden');
+    loginError.classList.add('login-error');
+  }
+});
+
+
+
+// Backtick: `
+// Curly braces: {}
+// Square brackets: []
+// Greater than sign: >
+// Less than sign: <
 
 
 
