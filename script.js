@@ -75,11 +75,11 @@ const displayMovements = function (movements) {
 };
 
 
-const calcAndDisplayBalance = function (movements) {
-  const balance = movements.reduce(function (accumulator, movement) {
+const calcAndDisplayBalance = function (account) {
+  account.balance = account.movements.reduce(function (accumulator, movement) {
     return accumulator + movement
   }, 0)
-  labelBalance.textContent = `${balance} USD`
+  labelBalance.textContent = `${account.balance} USD`
 };
 
 
@@ -123,6 +123,14 @@ const createUsernames = function (accounts) {
 };
 createUsernames(accounts);
 
+
+const updateUI = function (currentAccount) {
+  displayMovements(currentAccount.movements);
+  calcAndDisplayBalance(currentAccount);
+  calcDisplaySummary(currentAccount);
+}
+
+
 // currentAccount is equal to the logged-in user
 let currentAccount;
 
@@ -141,9 +149,7 @@ btnLogin.addEventListener('click', function (event) {
     inputLoginUsername.value = '';
     inputLoginPin.value = '';
     inputLoginPin.blur();
-    displayMovements(currentAccount.movements);
-    calcAndDisplayBalance(currentAccount.movements);
-    calcDisplaySummary(currentAccount)
+    updateUI(currentAccount);
     if (loginError.classList.contains('login-error')) {
       loginError.classList.remove('login-error');
       loginError.classList.add('login-error-hidden');
@@ -154,6 +160,28 @@ btnLogin.addEventListener('click', function (event) {
     loginError.classList.add('login-error');
   }
 });
+
+
+// Code to transfer money between users
+btnTransfer.addEventListener('click', function (event) {
+  event.preventDefault();
+  const amount = Number(inputTransferAmount.value);
+  const receiverAccount = accounts.find(function (account) {
+    return account.username === inputTransferTo.value;
+  });
+
+  // Clear the transfer input field after a transfer
+  inputTransferAmount.value = inputTransferTo.value = '';
+
+  // Ensure that transfers can only happen (1) if user sends more than 0$, (2) if the receiver account exist, (3) if the amount to be transfered is equal or less than the user's total money, (4) and if its sent to someone else than the user itself (cannot transfer money to himself)
+  if (amount > 0 && receiverAccount && currentAccount.balance >= amount && receiverAccount?.username !== currentAccount.username) {
+    currentAccount.movements.push(-amount);
+    receiverAccount.movements.push(amount);
+    updateUI(currentAccount);
+  }
+});
+
+
 
 
 
