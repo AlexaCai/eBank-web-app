@@ -59,10 +59,14 @@ const inputCloseUsername = document.querySelector('.form__input--user');
 const inputClosePin = document.querySelector('.form__input--pin');
 
 
-const displayMovements = function (movements) {
+const displayMovements = function (movements, sort = false) {
   containerMovements.innerHTML = '';
 
-  movements.forEach(function (movements, index) {
+  const moneyMovements = sort ? movements.slice().sort(function (a, b) {
+    return a - b
+  }) : movements;
+
+  moneyMovements.forEach(function (movements, index) {
     const type = movements > 0 ? 'deposit' : 'withdrawal'
     const html = `
         <div class="movements__row">
@@ -140,7 +144,6 @@ btnLogin.addEventListener('click', function (event) {
   currentAccount = accounts.find(function (account) {
     return account.username === inputLoginUsername.value
   })
-  console.log(currentAccount)
 
   if (currentAccount?.pin === Number(inputLoginPin.value)) {
     //Display welcome message and the whole UI elements
@@ -182,14 +185,44 @@ btnTransfer.addEventListener('click', function (event) {
 });
 
 
+btnLoan.addEventListener('click', function (event) {
+  event.preventDefault();
+  const amount = Number(inputLoanAmount.value);
+  // the 'some' method is used to see if at least one element in the 'movement' array from the user is equal or greater than 10% of the request loan amount.
+  if (amount > 0 && currentAccount.movements.some(function (movement) {
+    return movement >= amount * 0.10
+  })) {
+
+    currentAccount.movements.push(amount);
+    // Update the UI to show new deposit
+    updateUI(currentAccount);
+  }
+  inputLoanAmount.value = ''
+})
 
 
+btnClose.addEventListener('click', function (event) {
+  event.preventDefault();
+  if (currentAccount.username === inputCloseUsername.value && currentAccount.pin === Number(inputClosePin.value)) {
+    const index = accounts.findIndex(function (account) {
+      return account.username === currentAccount.username
+    })
+    // Delete account
+    accounts.splice(index, 1);
 
-// Backtick: `
-// Curly braces: {}
-// Square brackets: []
-// Greater than sign: >
-// Less than sign: <
+    // Logout by hiding UI and clearing the close account fields
+    containerApp.style.opacity = 0;
+  }
+  inputCloseUsername.value = inputClosePin.value = '';
+})
+
+
+let sorted = false;
+btnSort.addEventListener('click', function (event) {
+  event.preventDefault();
+  displayMovements(currentAccount.movements, !sorted)
+  sorted = !sorted;
+})
 
 
 
