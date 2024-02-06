@@ -103,6 +103,34 @@ const formatCurrencies = function (value, locale, currency) {
   }).format(value);
 };
 
+const startLogOutTimer = function () {
+  const tick = function () {
+    const min = String(Math.trunc(time / 60)).padStart(2, 0);
+    // Convert remaining time in seconds
+    const sec = String(time % 60).padStart(2, 0);
+
+    // In each call, print the remaining time to UI
+    labelTimer.textContent = `${min}:${sec}`;
+
+    // When time is at 0, stop timer and log out user
+    if (time === 0) {
+      clearInterval(timer);
+      labelWelcome.textContent = 'Log in to get started';
+      containerApp.style.opacity = 0;
+    }
+
+    // Decrease 1s
+    time = time - 1;
+  };
+
+  // Set time to 5 minutes
+  let time = 30;
+
+  // Call the timer every second
+  tick();
+  const timer = setInterval(tick, 1000);
+};
+
 
 const displayMovements = function (account, sort = false) {
   containerMovements.innerHTML = '';
@@ -193,12 +221,6 @@ const updateUI = function (currentAccount) {
 let currentAccount;
 
 
-// FAKE always logged-in
-currentAccount = account1;
-updateUI(currentAccount);
-containerApp.style.opacity = 100;
-
-
 btnLogin.addEventListener('click', function (event) {
   // Prevent form from submitting when users log in
   event.preventDefault();
@@ -222,8 +244,11 @@ btnLogin.addEventListener('click', function (event) {
       month: 'numeric',
       year: 'numeric',
     }
+
     labelDate.textContent = new Intl.DateTimeFormat(currentAccount.locale, time).format(now)
 
+    // Start timer to logout by default after X amount of time
+    startLogOutTimer();
 
     updateUI(currentAccount);
     if (loginError.classList.contains('login-error')) {
@@ -271,15 +296,18 @@ btnLoan.addEventListener('click', function (event) {
     return movement >= amount * 0.10
   })) {
 
-    currentAccount.movements.push(amount);
+    // Timeout method used so that it takes 3 secondes for the loan to be approved
+    setTimeout(function () {
+      currentAccount.movements.push(amount);
 
-    // Add transfer date
-    currentAccount.movementsDates.push(new Date().toISOString());
+      // Add transfer date
+      currentAccount.movementsDates.push(new Date().toISOString());
 
-    // Update the UI to show new deposit
-    updateUI(currentAccount);
+      // Update the UI to show new deposit
+      updateUI(currentAccount);
+    }, 3000)
+    inputLoanAmount.value = ''
   }
-  inputLoanAmount.value = ''
 })
 
 
@@ -305,3 +333,14 @@ btnSort.addEventListener('click', function (event) {
   displayMovements(currentAccount, !sorted)
   sorted = !sorted;
 });
+
+
+
+
+
+
+// Backtick: `
+// Curly braces: {}
+// Square brackets: []
+// Greater than sign: >
+// Less than sign: <
