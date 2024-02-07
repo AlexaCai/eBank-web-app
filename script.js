@@ -1,7 +1,6 @@
 'use strict';
 
 // Data
-
 const account1 = {
   owner: 'Jake Bonn',
   movements: [200, 455.23, -306.5, 25000, -642.21, -133.9, 79.97, 1300],
@@ -44,7 +43,9 @@ const account2 = {
 
 const accounts = [account1, account2];
 
-// Elements
+
+
+// Elements selected
 const labelWelcome = document.querySelector('.welcome');
 const labelDate = document.querySelector('.date');
 const labelBalance = document.querySelector('.balance__value');
@@ -72,30 +73,47 @@ const inputCloseUsername = document.querySelector('.form__input--user');
 const inputClosePin = document.querySelector('.form__input--pin');
 
 
-// Format the date for each operation displayed (display the date in the format of the user's location)
+
+// Target and take the first letter of each users' first name and last name (used in log in)
+const createUsernames = function (accounts) {
+  accounts.forEach(function (acc) {
+    acc.username = acc.owner
+      .toLowerCase()
+      .split(' ')
+      .map(name => name[0])
+      .join('');
+  });
+};
+createUsernames(accounts);
+
+
+
+// Format the dates shown beside each transaction (display the date in the format of the user's location)
 const formatMovementDate = function (date, locale) {
+  // Calculates the number of days between two dates (current day and the day the operation was done)
   const calcDaysPassed = function (date1, date2) {
     return Math.round(Math.abs(date2 - date1) / (1000 * 60 * 60 * 24))
-  }
-  const daysPassed = calcDaysPassed(new Date(), date)
-  console.log(daysPassed)
+  };
+
+  const daysPassed = calcDaysPassed(new Date(), date);
 
   if (daysPassed === 0) {
     return 'Today'
-  }
+  };
   if (daysPassed === 1) {
     return 'Yesterday'
-  }
+  };
   if (daysPassed <= 7) {
     return `${daysPassed} days ago`
   }
   else {
     return new Intl.DateTimeFormat(locale).format(date)
-  }
-}
+  };
+};
 
 
-// Format the currency displayed (display the money in the currency of the user's location)
+
+// Format the currency displayed on each user UI (display the money in the currency of the user's location)
 const formatCurrencies = function (value, locale, currency) {
   return new Intl.NumberFormat(locale, {
     style: 'currency',
@@ -103,51 +121,54 @@ const formatCurrencies = function (value, locale, currency) {
   }).format(value);
 };
 
+
+
+// Function create to keep track of users last activity, and log them out after a certain moment for security
 const startLogOutTimer = function () {
   const tick = function () {
     const min = String(Math.trunc(time / 60)).padStart(2, 0);
-    // Convert remaining time in seconds
     const sec = String(time % 60).padStart(2, 0);
 
-    // In each call, print the remaining time to UI
+    // Ensure the timer shown on UI is updated every second
     labelTimer.textContent = `${min}:${sec}`;
 
-    // When time is at 0, stop timer and log out user
+    // When timer reaches 0 due to inactivity, log out user
     if (time === 0) {
       clearInterval(timer);
       labelWelcome.textContent = 'Log in to get started';
       containerApp.style.opacity = 0;
     }
-
-    // Decrease 1s
     time = time - 1;
   };
 
-  // Set time to 5 minutes
-  let time = 30;
+  // Set initial timer to 5 minutes
+  let time = 300;
 
-  // Call the timer every second
+  // Call the tick function every second, which update the timer
   tick();
   const timer = setInterval(tick, 1000);
+  return timer;
 };
 
 
+
+// Display each transaction (money in, money out and loans) in each users UI
 const displayMovements = function (account, sort = false) {
   containerMovements.innerHTML = '';
 
   const moneyMovements = sort ? account.movements.slice().sort(function (a, b) {
-    return a - b
+    return a - b;
   }) : account.movements;
 
   moneyMovements.forEach(function (movements, index) {
-    const type = movements > 0 ? 'deposit' : 'withdrawal'
+    const type = movements > 0 ? 'deposit' : 'withdrawal';
 
-    // Display the date associated with each transaction
+    // Display the date associated with each transaction by calling the function created for that
     const date = new Date(account.movementsDates[index]);
-    const displayDate = formatMovementDate(date, account.locale)
+    const displayDate = formatMovementDate(date, account.locale);
 
-    // Display the money in the currency of the user's location
-    const formattedMovement = formatCurrencies(movements, account.locale, account.currency)
+    // Display the money in the currency of the user's location by calling the function created for that
+    const formattedMovement = formatCurrencies(movements, account.locale, account.currency);
 
     const html = `
         <div class="movements__row">
@@ -161,55 +182,48 @@ const displayMovements = function (account, sort = false) {
 };
 
 
+
+// Display the overall balance of the user account
 const calcAndDisplayBalance = function (account) {
   account.balance = account.movements.reduce(function (accumulator, movement) {
-    return accumulator + movement
+    return accumulator + movement;
   }, 0);
-  labelBalance.textContent = formatCurrencies(account.balance, account.locale, account.currency)
+  labelBalance.textContent = formatCurrencies(account.balance, account.locale, account.currency);
 };
 
 
+
+// Display users' total money in, total money out and total interest at the bottom of the UI
 const calcDisplaySummary = function (account) {
   const incomes = account.movements.filter(function (movement) {
-    return movement > 0
+    return movement > 0;
   }).reduce(function (accumulator, movement) {
-    return accumulator + movement
-  }, 0)
-  labelSumIn.textContent = formatCurrencies(incomes, account.locale, account.currency)
+    return accumulator + movement;
+  }, 0);
+  labelSumIn.textContent = formatCurrencies(incomes, account.locale, account.currency);
 
   const outcomes = account.movements.filter(function (movement) {
-    return movement < 0
+    return movement < 0;
   }).reduce(function (accumulator, movement) {
-    return accumulator + movement
-  }, 0)
-  labelSumOut.innerHTML = formatCurrencies(Math.abs(outcomes), account.locale, account.currency)
+    return accumulator + movement;
+  }, 0);
+  labelSumOut.innerHTML = formatCurrencies(Math.abs(outcomes), account.locale, account.currency);
 
   const interest = account.movements.filter(function (movement) {
-    return movement > 0
+    return movement > 0;
   }).map(function (deposit) {
-    return deposit * account.interestRate / 100
+    return deposit * account.interestRate / 100;
   }).filter(function (interest, index, array) {
-    return interest >= 1
+    return interest >= 1;
   }).reduce(function (accumulator, interest) {
-    return accumulator + interest
-  }, 0)
-  labelSumInterest.innerHTML = formatCurrencies(interest, account.locale, account.currency)
+    return accumulator + interest;
+  }, 0);
+  labelSumInterest.innerHTML = formatCurrencies(interest, account.locale, account.currency);
 }
 
 
-// Target and take the first letter of each users' first name and last name.
-const createUsernames = function (accounts) {
-  accounts.forEach(function (acc) {
-    acc.username = acc.owner
-      .toLowerCase()
-      .split(' ')
-      .map(name => name[0])
-      .join('');
-  });
-};
-createUsernames(accounts);
 
-
+// Used to update users UI everytime an action is completed
 const updateUI = function (currentAccount) {
   displayMovements(currentAccount);
   calcAndDisplayBalance(currentAccount);
@@ -217,19 +231,22 @@ const updateUI = function (currentAccount) {
 }
 
 
-// currentAccount is equal to the logged-in user
+
+// currentAccount is equal to the current logged-in user
 let currentAccount;
+// timer variable is defined here because we need the variable to persit between different logins
+let timer;
+
 
 
 btnLogin.addEventListener('click', function (event) {
-  // Prevent form from submitting when users log in
   event.preventDefault();
   currentAccount = accounts.find(function (account) {
     return account.username === inputLoginUsername.value
-  })
+  });
 
   if (currentAccount?.pin === Number(inputLoginPin.value)) {
-    //Display welcome message and the whole UI elements
+    //Display welcome message and the whole UI elements upon successful login
     labelWelcome.textContent = `Welcome back ${currentAccount.owner.split(' ')[0]}`;
     containerApp.style.opacity = 100;
     inputLoginUsername.value = '';
@@ -243,27 +260,32 @@ btnLogin.addEventListener('click', function (event) {
       day: 'numeric',
       month: 'numeric',
       year: 'numeric',
-    }
+    };
 
-    labelDate.textContent = new Intl.DateTimeFormat(currentAccount.locale, time).format(now)
+    labelDate.textContent = new Intl.DateTimeFormat(currentAccount.locale, time).format(now);
 
+    // If a timer already exist when someone log in (ex: from another past user session), the timer is cleared and set back to zero for the new logged-in user
+    if (timer) {
+      clearInterval(timer);
+    };
     // Start timer to logout by default after X amount of time
-    startLogOutTimer();
+    timer = startLogOutTimer();
 
     updateUI(currentAccount);
     if (loginError.classList.contains('login-error')) {
       loginError.classList.remove('login-error');
       loginError.classList.add('login-error-hidden');
-    }
+    };
   } else {
     loginError.innerHTML = '<h1>An error occurred during authentication. Please ensure you have the right username and PIN.</h1>';
     loginError.classList.remove('login-error-hidden');
     loginError.classList.add('login-error');
-  }
+  };
 });
 
 
-// Code to transfer money between users
+
+// Logic to transfer money between users
 btnTransfer.addEventListener('click', function (event) {
   event.preventDefault();
   const amount = Number(inputTransferAmount.value);
@@ -274,7 +296,7 @@ btnTransfer.addEventListener('click', function (event) {
   // Clear the transfer input field after a transfer
   inputTransferAmount.value = inputTransferTo.value = '';
 
-  // Ensure that transfers can only happen (1) if user sends more than 0$, (2) if the receiver account exist, (3) if the amount to be transfered is equal or less than the user's total money, (4) and if its sent to someone else than the user itself (cannot transfer money to himself)
+  // Ensure that transfers can only happen (1) if user sends more than 0$, (2) if the receiver account exist, (3) if the amount to be transfered is equal or less than the user's total balance, (4) and if its sent to someone else than the user itself (user cannot transfer money to himself)
   if (amount > 0 && receiverAccount && currentAccount.balance >= amount && receiverAccount?.username !== currentAccount.username) {
     currentAccount.movements.push(-amount);
     receiverAccount.movements.push(amount);
@@ -284,16 +306,21 @@ btnTransfer.addEventListener('click', function (event) {
     receiverAccount.movementsDates.push(new Date().toISOString());
 
     updateUI(currentAccount);
-  }
+
+    // Reset timer (everytime users make an action, the timer is reset to original time - because the timer keeps track of inactivity)
+    clearInterval(timer);
+    timer = startLogOutTimer();
+  };
 });
 
 
+
+// Logic for loans
 btnLoan.addEventListener('click', function (event) {
   event.preventDefault();
   const amount = Math.floor(inputLoanAmount.value);
-  // the 'some' method is used to see if at least one element in the 'movement' array from the user is equal or greater than 10% of the request loan amount.
   if (amount > 0 && currentAccount.movements.some(function (movement) {
-    return movement >= amount * 0.10
+    return movement >= amount * 0.10;
   })) {
 
     // Timeout method used so that it takes 3 secondes for the loan to be approved
@@ -303,44 +330,43 @@ btnLoan.addEventListener('click', function (event) {
       // Add transfer date
       currentAccount.movementsDates.push(new Date().toISOString());
 
-      // Update the UI to show new deposit
       updateUI(currentAccount);
-    }, 3000)
-    inputLoanAmount.value = ''
-  }
-})
 
-
-btnClose.addEventListener('click', function (event) {
-  event.preventDefault();
-  if (currentAccount.username === inputCloseUsername.value && currentAccount.pin === Number(inputClosePin.value)) {
-    const index = accounts.findIndex(function (account) {
-      return account.username === currentAccount.username
-    })
-    // Delete account
-    accounts.splice(index, 1);
-
-    // Logout by hiding UI and clearing the close account fields
-    containerApp.style.opacity = 0;
-  }
-  inputCloseUsername.value = inputClosePin.value = '';
-})
-
-
-let sorted = false;
-btnSort.addEventListener('click', function (event) {
-  event.preventDefault();
-  displayMovements(currentAccount, !sorted)
-  sorted = !sorted;
+      // Reset timer (everytime users make an action, the timer is reset to original time - because the timer keeps track of inactivity)
+      clearInterval(timer);
+      timer = startLogOutTimer();
+    }, 3000);
+    inputLoanAmount.value = '';
+  };
 });
 
 
 
+// Logic to close account
+btnClose.addEventListener('click', function (event) {
+  event.preventDefault();
+  if (currentAccount.username === inputCloseUsername.value && currentAccount.pin === Number(inputClosePin.value)) {
+    const index = accounts.findIndex(function (account) {
+      return account.username === currentAccount.username;
+    });
+
+    accounts.splice(index, 1);
+
+    // Logout by hiding UI and clearing the close account fields
+    containerApp.style.opacity = 0;
+  };
+  inputCloseUsername.value = inputClosePin.value = '';
+});
 
 
 
-// Backtick: `
-// Curly braces: {}
-// Square brackets: []
-// Greater than sign: >
-// Less than sign: <
+// Logic for the transcations sorted option
+let sorted = false;
+btnSort.addEventListener('click', function (event) {
+  event.preventDefault();
+  displayMovements(currentAccount, !sorted);
+  sorted = !sorted;
+  // Reset timer (everytime users make an action, the timer is reset to original time - because the timer keeps track of inactivity)
+  clearInterval(timer);
+  timer = startLogOutTimer();
+});
